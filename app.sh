@@ -5,3 +5,4 @@ echo "  Built by: Sree Vinay"
 echo "  Day 2: GitHub Actions"
 echo "================================"
 echo "Simulating a test failure..."
+exit 1
