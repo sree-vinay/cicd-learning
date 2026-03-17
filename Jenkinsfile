@@ -17,22 +17,22 @@ pipeline {
                 sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
-
-        stage('SonarQube Analysis') {
+stage('SonarQube Analysis') {
     steps {
         withSonarQubeEnv('SonarQube') {
-            sh "mkdir -p ${WORKSPACE}/.scannerwork && chmod 777 ${WORKSPACE}/.scannerwork"
             sh """
                 docker run --rm \
                     --network cicd-network \
                     -e SONAR_HOST_URL=http://sonarqube:9000 \
                     -e SONAR_TOKEN=${SONAR_AUTH_TOKEN} \
                     -v ${WORKSPACE}:/usr/src \
+                    -v sonarwork:/tmp/.scannerwork \
+                    --user root \
                     sonarsource/sonar-scanner-cli \
                     -Dsonar.projectKey=cicd-learning \
                     -Dsonar.projectName=cicd-learning \
-                    -Dsonar.sources=. \
-                    -Dsonar.working.directory=/usr/src/.scannerwork
+                    -Dsonar.sources=/usr/src \
+                    -Dsonar.working.directory=/tmp/.scannerwork
             """
         }
     }
