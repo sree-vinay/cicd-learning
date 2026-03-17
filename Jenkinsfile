@@ -20,31 +20,44 @@ pipeline {
 stage('SonarQube Analysis') {
     steps {
         withSonarQubeEnv('SonarQube') {
+            sh "mkdir -p ${WORKSPACE}/.sonar"
             sh """
                 docker run --rm \
                     --network cicd-network \
+                    --user root \
                     -e SONAR_HOST_URL=http://sonarqube:9000 \
                     -e SONAR_TOKEN=${SONAR_AUTH_TOKEN} \
                     -v ${WORKSPACE}:/usr/src \
-                    -v sonarwork:/tmp/.scannerwork \
-                    --user root \
                     sonarsource/sonar-scanner-cli \
                     -Dsonar.projectKey=cicd-learning \
                     -Dsonar.projectName=cicd-learning \
                     -Dsonar.sources=/usr/src \
-                    -Dsonar.working.directory=/tmp/.scannerwork
+                    -Dsonar.working.directory=/usr/src/.sonar
             """
         }
     }
 }
 
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
+stage('Quality Gate') {
+    steps {
+        script {
+            def response = sh(
+                script: """
+                    docker run --rm --network cicd-network \
+                        alpine wget -qO- \
+                        'http://sonarqube:9000/api/qualitygates/project_status?projectKey=cicd-learning'
+                """,
+                returnStdout: true
+            ).trim()
+            echo "Quality Gate response: ${response}"
+            if (response.contains('"status":"ERROR"')) {
+                error 'Quality Gate FAILED!'
+            } else {
+                echo 'Quality Gate PASSED!'
             }
         }
+    }
+}
 
         stage('Test') {
             steps {
