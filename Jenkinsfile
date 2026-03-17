@@ -13,6 +13,7 @@ pipeline {
                 echo "Building image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
                 echo "Build number: ${env.BUILD_NUMBER}"
                 echo "Branch: ${env.GIT_BRANCH}"
+                echo "Commit: ${env.GIT_COMMIT}"
                 sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
