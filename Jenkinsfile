@@ -18,6 +18,32 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        docker run --rm \
+                            --network cicd-network \
+                            -e SONAR_HOST_URL=http://sonarqube:9000 \
+                            -e SONAR_TOKEN=${SONAR_AUTH_TOKEN} \
+                            -v ${WORKSPACE}:/usr/src \
+                            sonarsource/sonar-scanner-cli \
+                            -Dsonar.projectKey=cicd-learning \
+                            -Dsonar.projectName=cicd-learning \
+                            -Dsonar.sources=.
+                    '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
         stage('Test') {
             steps {
                 echo 'Running container test...'
