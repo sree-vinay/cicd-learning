@@ -41,19 +41,22 @@ stage('SonarQube Analysis') {
 stage('Quality Gate') {
     steps {
         script {
-            def response = sh(
-                script: """
-                    docker run --rm --network cicd-network \
-                        alpine wget -qO- \
-                        'http://sonarqube:9000/api/qualitygates/project_status?projectKey=cicd-learning'
-                """,
-                returnStdout: true
-            ).trim()
-            echo "Quality Gate response: ${response}"
-            if (response.contains('"status":"ERROR"')) {
-                error 'Quality Gate FAILED!'
-            } else {
-                echo 'Quality Gate PASSED!'
+            withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                def response = sh(
+                    script: """
+                        docker run --rm --network cicd-network \
+                            alpine wget -qO- \
+                            --header='Authorization: Bearer ${SONAR_TOKEN}' \
+                            'http://sonarqube:9000/api/qualitygates/project_status?projectKey=cicd-learning'
+                    """,
+                    returnStdout: true
+                ).trim()
+                echo "Quality Gate response: ${response}"
+                if (response.contains('"status":"ERROR"')) {
+                    error 'Quality Gate FAILED!'
+                } else {
+                    echo 'Quality Gate PASSED!'
+                }
             }
         }
     }
