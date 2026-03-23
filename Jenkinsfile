@@ -80,6 +80,15 @@ stage('SonarQube Analysis') {
                 }
             }
         }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                echo 'Deploying to Kubernetes...'
+                sh 'kubectl set image deployment/cicd-learning cicd-learning=${DOCKER_HUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} --kubeconfig=/root/.kube/config'
+                sh 'kubectl rollout status deployment/cicd-learning --kubeconfig=/root/.kube/config'
+                echo 'Deployment complete!'
+            }
+        }
     }
 
     post {
